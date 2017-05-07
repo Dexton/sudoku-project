@@ -3,7 +3,7 @@ require './cell'
 require 'set'
 
 class Sudoku
-  attr_accessor :pussle, :size, :part_size
+  attr_accessor :pussle, :size, :part_size, :solver
   def initialize(lines=nil)
     if not lines
       @pussle = Matrix.build(9) {(rand*10).to_i % 9 + 1}
@@ -23,20 +23,25 @@ class Sudoku
   end
 
   def one_rule(sets)
-    # Apply the only rule of the game
+    # Apply the only rule of the game, no repeated characters in the sets
     sets.collect { |set| set.count == set.uniq.count }.all?
+  end
+
+  def valid?
+    @pussle.each_with_index { |el, row, col| return false if not adheres_to_rule? row, col }
+    true
   end
 
   def self.is_gap?(char)
     not char == 0
   end
 
-  def valid?
-    (0...@size).collect { |i| adheres_to_rule?(i) }.all?
+  def solved?
+    @pussle.collect { |cell| cell.solved? } .all?
   end
 
-  def adheres_to_rule?(i)
-    sets = gather_sets_for(i)
+  def adheres_to_rule?(row_num, col_num)
+    sets = gather_sets_for(row_num, col_num)
     # We can repeate gaps but not characters
     sets.map { |set| set.delete(0) }
     one_rule(sets)
@@ -44,25 +49,52 @@ class Sudoku
 
   def gather_sets_for(row_num,col_num=row_num)
     sets = [row(row_num), col(col_num), part(row_num)]
-    sets.collect {|set| set.collect(&:solved).to_a.compact}
+    sets.collect {|set| set.collect(&:solved).to_a.flatten.compact}
   end
 
   def solve
-    @pussle.each_with_index do |cell, row_num, col_num|
-        if cell.is_gap?
-          fill(row_num,col_num)
-        end
-    end
+    backtracker
   end
 
-  def fill(row, col)
+  def backtracker(row_num=0, col_num=0)
+    if row_num == 0 and col_num == 0
+      row_num, col_num = next_position(row_num, col_num)
+    end
+
+    if row_num  == @size
+      return true
+    end
+
+    @characters.each do |el|
+      @pussle[row_num, col_num].set el
+      if adheres_to_rule?(row_num, col_num)
+        next_row, next_col= next_position(row_num, col_num)
+        if backtracker(next_row, next_col)
+          return true
+        end
+      end
+    end
+    @pussle[row_num, col_num].clear
+    return false
+  end
+
+  def next_position(row_num, col_num)
+    while row_num != @size  and @pussle[row_num, col_num].solved?
+      col_num += 1
+      if col_num == @size
+        col_num = 0
+        row_num += 1
+      end
+    end
+    return row_num, col_num
+  end
+
+  def possible(row_num, col)
     # Find the characters that are not in the matched row, column or part
-    used_up = gather_sets_for(row,col).flatten.uniq!
+    used_up = gather_sets_for(row_num,col).flatten.uniq!
     possible = @characters.clone
-    possible.map { |el| possible.delete el }
-    puts 'Used up ' + used_up.to_s
-    puts 'Filling row ' + row.to_s + ' col ' + col.to_s + ' with ' + possible.to_s
-    @pussle[row, col].fill(possible.compact)
+    used_up.each { |el| possible.delete el }
+    possible
   end
 
   def gaps

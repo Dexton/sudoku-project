@@ -39,12 +39,13 @@ if lines.count != 9
 else
   o = Sudoku.new lines
   o.output
+  puts o.solved?
   if not o.valid?
     puts 'The imported sudoku game is not valid'
   end
   puts o.gaps.count
   puts o.difficulty
   o.solve
-  puts o.pussle
   o.output
+  puts 'Done!'
 end

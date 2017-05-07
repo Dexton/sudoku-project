@@ -3,11 +3,14 @@ class Cell < Array
     self.empty?
   end
 
+  def set(el)
+    self.clear
+    self.push el
+  end
+
   def fill(possibilities)
     self.clear
-    puts possibilities.to_s
     possibilities.each { |el| self.push el}
-    puts self.value
     self
   end
 
