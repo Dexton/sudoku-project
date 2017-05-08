@@ -4,7 +4,7 @@ require 'set'
 
 class Sudoku
   attr_accessor :pussle, :size, :part_size, :solver
-  def initialize(lines=nil)
+  def initialize(lines=nil, solver=:backtracker)
     if not lines
       @pussle = Matrix.build(9) {(rand*10).to_i % 9 + 1}
     else
@@ -17,6 +17,7 @@ class Sudoku
         end
       end
     end
+    @solver = self.method(solver)
     @size = @pussle.column_count
     @characters = (1..@size).to_a
     @part_size = Math.sqrt(@size).to_i
@@ -30,10 +31,6 @@ class Sudoku
   def valid?
     @pussle.each_with_index { |el, row, col| return false if not adheres_to_rule? row, col }
     true
-  end
-
-  def self.is_gap?(char)
-    not char == 0
   end
 
   def solved?
@@ -53,7 +50,12 @@ class Sudoku
   end
 
   def solve
-    backtracker
+    solver.call
+  end
+
+  def bad_solver
+    # Insert random values for testing
+    @pussle.each { |cell| cell.set (1..@size).to_a.sample if not cell.solved? }
   end
 
   def backtracker(row_num=0, col_num=0)

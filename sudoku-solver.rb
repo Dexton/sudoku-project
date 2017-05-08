@@ -1,11 +1,16 @@
 #!/usr/bin/env ruby
+require 'getoptlong'
 require './sudoku'
 
 # Setup
 lines = []
+solver = :backtracker
+show_difficulty = false
+file = ''
 invalid_line = 'Make sure that each line contains 9 characters(1-9 or .)'
 invalid_count = 'Make sure that your file contains 9 lines'
 invalid_file = 'File given as first argument could not be read.'
+invalid_input = 'Failed to parse input please refere to README.md'
 
 def process(line)
   # Change the line into a integer array
@@ -18,33 +23,53 @@ def process(line)
         end
       end
     else
-      puts invalid_line
+      raise invalid_line
     end
+end
+
+def handle_arguments(opt, arg)
 end
 
 # Read file input
 begin
-  input = File.open(ARGV[0])
+  opts = GetoptLong.new(
+    ['--file', '-f', GetoptLong::REQUIRED_ARGUMENT],
+    ['--difficulty', '-d', GetoptLong::OPTIONAL_ARGUMENT],
+    ['--solver', '-s', GetoptLong::OPTIONAL_ARGUMENT]
+  )
+
+  opts.each do |opt, arg|
+    case opt
+    when '--file'
+      file = arg.strip
+      puts file
+    when '--difficulty'
+      show_difficulty = arg.strip == 'yes'
+    when '--solver'
+      solver = arg.strip.to_sym
+    end
+  end
+
+  input = File.open(file)
   input.each do |file_line|
     line = file_line.strip
     lines << process(line)
   end
 rescue => e
-  puts e
+  raise e
 end
 
 if lines.count != 9
-  puts invalid_count
-  puts invalid_line
+  raise invalid_count
 else
-  o = Sudoku.new lines
-  o.output
-  puts o.solved?
+  o = Sudoku.new lines, solver
+  o.output 'Input pussle: '
   if not o.valid?
-    puts 'The imported sudoku game is not valid'
+    raise 'The imported sudoku game is not valid'
   end
-  puts o.gaps.count
-  puts o.difficulty
+  if show_difficulty
+    puts o.difficulty
+  end
   o.solve
   o.output
   puts 'Done!'
