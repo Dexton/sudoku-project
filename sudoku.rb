@@ -5,6 +5,7 @@ require 'set'
 class Sudoku
   attr_accessor :pussle, :size, :part_size, :solver
   def initialize(lines=nil, solver=:backtracker)
+    # Default to random matrix if no lines are given
     if not lines
       @pussle = Matrix.build(9) {(rand*10).to_i % 9 + 1}
     else
